@@ -1,0 +1,78 @@
+Barbu Florina 331AA
+Tema 3 APD - Prelucrarea de imagini folosind rețele MPI
+
+Pentru a ajunge la rezultatul final de aplicare al filtrelor
+am urmat mai mulți pași după cum urmează.
+
+Calculul arborelui de acoperire al rețelei
+------------------------------------------
+Am citit topologia din fișierul de intrare și am salvat-o 
+pentru fiecare proces în parte în matricea de adiacență,
+fiecare proces având în memorie doar legăturile cu vecinii săi.
+
+Prima dată vrem să aflăm câți copii are fiecare proces și care
+este părintele fiecărui proces. 
+
+Deci pentru nr de COPII trimitem "pring-uri" către toate procesele
+cu care are legătură și numărăm câte "ecouri" așteptăm să primim înapoi.
+
+PĂRINTE se va considera procesul de la care primim pentru prima dată ping.
+
+Ping-urile și ecourile se vor diferenția prin setarea unui TAG diferit.
+În cazul tag-ului de ping datele se ignoră pentru că sunt redundante, iar
+în cazul ecoului vom primi topologia pe care o știe "copilul" de la care 
+o primim. Ca proces părinte vom face «merge» cu topologiile tuturor copiilor
+
+Pentru a se elimina ciclurile din graf, în cazul în care ne cunoaștem deja 
+părintele și primim un PING, vom trimite ca răspuns o topologie vidă.
+
+
+Parsarea pozei în fâșii și trimiterea către copii
+-------------------------------------------------
+Procesul de rank 0, adică rădăcina gestionează practic toate datele citite din 
+fișierul imagine(pe care aplică bordura) și face prima împărțire a pozei în mod 
+egal către copii săi.
+
+În cazul în care nu se poate împărți în mod egal, restul de rânduri se dau 
+ultimului copil spre procesare.
+
+Aceste send-uri și împărțiri se fac până se ajunde la procesele frunză care 
+au nr_copii = 0
+
+
+Procesarea propriu-zisă a fâșiilor 
+----------------------------------
+Am creat câte un filtru de covoluție (matrice 3x3) pentru fiecare tip de efect 
+în parte: smooth, blur, mean_removal, sharpen.
+
+Parcurgerea fâșiei de procesat se face de la 1:cols-1 și 1:rows-1 pentru a nu 
+se procesa și bordurile.
+
+Calul efectiv se face prin suma ponderată dată de matricea filtru care se 
+împarte la factorul specific.
+
+Tot la acest pas se însumează de fiecare dată, de fiecare proces, cât linii a 
+primit spre procesare, eliminându-se granițele.
+
+
+Reconstituirea pozei
+--------------------
+După procesare frunzele elimină bordurile și trimit poza în sus către părinți și 
+părinții tot în sus către rădăcină.
+
+După ce poza a ajuns la rădăcină, procesul o scrie în fișier, se decrementează 
+nr de poze și se trece la următoarea prelucrare.
+
+
+Statistica
+----------
+Când nr de poze pentru procesare devine 0, rădăcina trimite semnal către copiii 
+săi și copiii mai departe spre frunze că procesarea s-a terminat.
+
+Apoi intră într-un apel blocant Recv până primește de la frunze rezultatul 
+statisc al procesării.
+
+Am scris aceste date suprascriind matricea de adiacență, unde aveam 1, adică 
+existență legătură, cu nr de linii procesate și trimiteam de fiecare dată 
+părintelui linia procesului curent (copil) din matricea de adiancență. 
+Părintele făcea mereu «merge» verificând propria sa matrice de adiacență.
