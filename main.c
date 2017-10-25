@@ -1,6 +1,6 @@
 /*
- * Barbu Florina, 331AA
- * Tema 3 APD - Procesarea de imagini folosind rețele MPI
+ * Barbu Florina
+ * Procesarea de imagini folosind rețele MPI
  */
 
 
